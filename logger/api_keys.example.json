@@ -1,0 +1,12 @@
+[
+    {
+        "key_hash": "replace_with_sha256_hex_of_the_api_key",
+        "user_id": "alice",
+        "enabled": true
+    },
+    {
+        "key_hash": "replace_with_sha256_hex_of_another_api_key",
+        "user_id": "bob",
+        "enabled": true
+    }
+]

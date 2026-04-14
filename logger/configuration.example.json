@@ -1,0 +1,11 @@
+{
+    "uid": "your-user-id",
+    "instance_id": "your-instance-id",
+    "log_dir": "/path/to/local/logs",
+    "arch_dir": "/path/to/local/logs/archive",
+    "use_gcp": false,
+    "gcp_project": "your-gcp-project-id",
+    "bq_dataset": "radio_playlog",
+    "bq_table": "plays",
+    "auth_keys_file": ""
+}
