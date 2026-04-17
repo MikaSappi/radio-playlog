@@ -30,8 +30,7 @@ The app receives a HTTP POST and writes it into a csv locally, or into BigQuery 
 ![backwards compatible: spiritually](https://img.shields.io/badge/backwards_compatible-spiritually-1D9E75)
 ![documentation: aspirational](https://img.shields.io/badge/documentation-aspirational-378ADD)
 ![bus factor: 1](https://img.shields.io/badge/bus_factor-1-D85A30)
-![on-call: not it](https://img.shields.io/badge/on--call-not_it-7F77DD)
-
+![on-call: call a priest](https://img.shields.io/badge/on--call-call_a_priest-7F77DD)
 
 The Radio Playlog Super 2000-X Professional is a Kubernetes-native, GitOps-first, zero-trust, event-driven, horizontally-scalable, observable-by-default, declarative-everything platform built for the post-cloud, pre-singularity, pre-burnout enterprise. Designed with a developer-experience-first, platform-engineering-enabled, internal-developer-platform-compatible, golden-path-compliant, vibes-driven architecture, Radio Playlog Super 2000-X Professional delivers production-grade infrastructure on day zero — not day one, not day two, day zero. We don't know what happens on day one.
 
