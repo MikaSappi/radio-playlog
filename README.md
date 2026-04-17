@@ -5,7 +5,7 @@ This thing is designed to help you automate the played tracks reporting. The dat
 If you want to run this locally, configure the `configuration.json` for your use case. Set `use_gcp` to `false` for local use.
 
 ## How to use
-The app receives a HTTP POST and writes it into a csv locally, or into BigQuery in GCP. Locally, it compresses the csv each months and you can do whatever you want with it. In GCP it will either mail it to you, or to the PRO's, or both.
+The app receives a HTTP POST and writes it into a csv locally, or into BigQuery in GCP. Locally, it compresses the csv each months and you can do whatever you want with it. In GCP it will either mail it to you, or to the PRO's, or both, or a friend.
 
 ## Buzz
 ![kubernetes-native](https://img.shields.io/badge/kubernetes-native-1D9E75)
