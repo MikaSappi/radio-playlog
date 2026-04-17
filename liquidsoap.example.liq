@@ -1,4 +1,4 @@
-# radio-playlog client for Liquidsoap 2.x
+# radio-playlog client for Liquidsoap 2.4.x
 #
 # Copy this snippet into your .liq configuration and adjust playlog_url and
 # playlog_key. Wire playlog_send as an on_metadata handler on whichever
@@ -9,10 +9,8 @@
 # library has such tracks, swap the data= line for a proper JSON encoder
 # (json.stringify in recent Liquidsoap versions).
 
-### do not look at this file. please.
-
-playlog_url = "https://playlog.example.com/"
-playlog_key = "your-api-key-here"
+playlog_url = "http://the.url.not/"
+playlog_key = "unicorns-are-nice-and-fluffy-and-nice"
 
 def playlog_send(m) =
   title = m["title"]
@@ -40,4 +38,4 @@ end
 
 # Attach to your existing source. Replace `radio` with whatever you've named
 # the source you want track changes logged from.
-radio = source.on_metadata(radio, playlog_send)
+radio.on_metadata(synchronous=false, playlog_send)

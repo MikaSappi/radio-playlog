@@ -1,0 +1,6 @@
+{
+    "use_gcp": true,
+    "gcp_project": "your-gcp-project-id",
+    "bq_dataset": "radio_playlog",
+    "bq_table": "plays"
+}

@@ -2,5 +2,6 @@
 .*/
 .DS_Store
 logger/configuration.json
+logger/configuration.gcp.json
 logger/api_keys.json
 logger/radio-playlog
