@@ -7,7 +7,101 @@ If you want to run this locally, configure the `configuration.json` for your use
 ## How to use
 The app receives a HTTP POST and writes it into a csv locally, or into BigQuery in GCP. Locally, it compresses the csv each months and you can do whatever you want with it. In GCP it will either mail it to you, or to the PRO's, or both, or a friend.
 
-## Buzz
+---
+# API
+To get the API key, you may [contact us](https://fremen.fi/consultation) for now, until a UI is ready for onboarding. Use of this application is free of charge at least for the first adopters.
+## Metadata
+The app accepts JSON-encoded information using the following schema:
+```JSON
+{
+"artist": "string",
+"title": "string"
+}
+```
+## Authentication
+Add a header to your HTTP request `X-API-Key: unicorns-are-fluffy-and-so-on`.
+
+## Timestamp
+Timestamp is written by the receiving service and represents the time it received the request. This timestamp may vary even 500 ms depending on several factors. Timestamps are usually within the "intended" second.
+
+---
+
+# Use with Liquidsoap
+```Liquidsoap
+
+# Define the URL and your API-key
+playlog_url = "the.url.not"
+playlog_key = "secrets"
+
+def playlog_send(m) =
+  title = m["title"]
+  artist = m["artist"]
+
+# Check if you have data to send, fail if any is empty
+# (because you have to have both fields for reporting)
+
+  if
+    title != "" or artist != ""
+  then
+
+  # Don't break if the string contains `"` or `'` or `{}` and so on
+
+    data = json.stringify({title=title, artist=artist})
+    response =
+      http.post(
+        playlog_url,
+        headers=[
+          ("X-API-Key", playlog_key),
+          ("Content-Type", "application/json")
+        ],
+        data=data
+      )
+
+      # Log the response code
+
+    log(
+      label="playlog",
+      "POST status=#{response.status_code}"
+    )
+  end
+end
+
+# Call this with your final master source
+
+def on_md_handler(s) =
+  s.on_metadata(synchronous=false, playlog_send)
+end
+
+```
+For example, if your main source is called `radio`, you would call this somewhere close to the master output:
+```Liquidsoap
+radio = fallback(
+[
+studios,
+sources,
+fb_source
+])
+
+...
+
+on_md_handler(radio)
+
+...
+
+output.icecast(radio, ...)
+```
+
+## With other systems
+Anything that can send a HTTP POST to a URL in the internet can use this application.
+```bash
+curl -X POST https://instance-url.not/ \
+  -H "X-API-Key: secrets" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test Track","artist":"Test Artist"}'
+```
+
+---
+# Buzz
 ![kubernetes-native](https://img.shields.io/badge/kubernetes-native-1D9E75)
 ![cloud-agnostic](https://img.shields.io/badge/cloud-agnostic-378ADD)
 ![gitops-first](https://img.shields.io/badge/gitops-first-7F77DD)

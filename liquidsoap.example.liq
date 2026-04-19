@@ -1,25 +1,20 @@
-# radio-playlog client for Liquidsoap 2.4.x
-#
-# Copy this snippet into your .liq configuration and adjust playlog_url and
-# playlog_key. Wire playlog_send as an on_metadata handler on whichever
-# source you want track changes from.
-#
-# Note: this uses basic string interpolation for the JSON body. Track
-# metadata containing literal '"' or '\' will break the payload; if your
-# library has such tracks, swap the data= line for a proper JSON encoder
-# (json.stringify in recent Liquidsoap versions).
-
-playlog_url = "http://the.url.not/"
-playlog_key = "unicorns-are-nice-and-fluffy-and-nice"
+# Define the URL and your API-key
+playlog_url = "the.url.not"
+playlog_key = "secrets"
 
 def playlog_send(m) =
   title = m["title"]
   artist = m["artist"]
 
+  # Check if you have data to send, fail if any is empty
+  # (because you have to have both fields for reporting)
+
   if
     title != "" or artist != ""
   then
-    data = '{"title":"#{title}","artist":"#{artist}"}'
+    # Don't break if the string contains `"` or `'` or `{}` and so on
+
+    data = json.stringify({title = title, artist = artist})
     response =
       http.post(
         playlog_url,
@@ -29,6 +24,9 @@ def playlog_send(m) =
         ],
         data=data
       )
+
+    # Log the response code
+
     log(
       label="playlog",
       "POST status=#{response.status_code}"
@@ -36,6 +34,8 @@ def playlog_send(m) =
   end
 end
 
-# Attach to your existing source. Replace `radio` with whatever you've named
-# the source you want track changes logged from.
-radio.on_metadata(synchronous=false, playlog_send)
+# Call this with your final master source
+
+def on_md_handler(s) =
+  s.on_metadata(synchronous=false, playlog_send)
+end
