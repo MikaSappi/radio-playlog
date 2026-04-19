@@ -1,0 +1,20 @@
+{
+  "gcp_project": "radio-playlog",
+  "bq_dataset": "radio_playlog",
+  "bq_table_users": "users",
+  "bq_table_api_keys": "api_keys",
+  "bq_table_settings": "user_settings",
+
+  "ui_origin": "https://log.fremen.fi",
+  "api_base_url": "https://log.fremen.fi",
+
+  "session_secret_env": "SESSION_SECRET",
+  "session_ttl_hours": 168,
+
+  "google_client_id": "your-google-client-id.apps.googleusercontent.com",
+  "google_client_secret_env": "GOOGLE_CLIENT_SECRET",
+
+  "microsoft_client_id": "your-microsoft-app-id",
+  "microsoft_client_secret_env": "MICROSOFT_CLIENT_SECRET",
+  "microsoft_tenant": "common"
+}

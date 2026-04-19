@@ -1,0 +1,175 @@
+/* Radio Playlog UI. Shares Fremen brand vars and primitives; only overrides
+   what the dashboard actually needs. */
+
+:root {
+  --white: white;
+  --base-gray: #1d1d1f;
+  --base-light: #f5f5f7;
+  --off-gray: rgba(63, 61, 61, 1);
+  --off-gray-2: rgba(73, 73, 73, 1);
+  --accent: rgba(197, 152, 73, 1);
+  --link-blue: #006edb;
+  --link-only-text: #006edb;
+  --text-on-link: #fff;
+  --code-green: rgb(22, 167, 39);
+  --notice-yellow: rgba(218, 190, 69, 1);
+  --transparent: #fff0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --base-gray: #2f2f2f;
+    --link-only-text: #4ca5fe;
+    --notice-yellow: #b87300;
+  }
+  body { background: black !important; color: var(--base-light) !important; }
+  .paragraph, p, h1, h2 { color: var(--base-light) !important; }
+  .formtextfield { background: #1a1a1a; color: var(--base-light); border-color: #444; }
+  .specs-table th, .specs-table td { border-color: #333; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; overflow-x: hidden; }
+body {
+  background: var(--white);
+  color: var(--base-gray);
+  font-family: Wotfard, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 28px;
+  margin: 0;
+}
+
+h1 {
+  letter-spacing: -.18rem;
+  font-family: Brockmann, Arial, sans-serif;
+  font-size: 4rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
+  padding: 2rem 0 1rem;
+}
+
+h2 {
+  letter-spacing: -.1rem;
+  font-size: 2.25rem;
+  font-weight: 500;
+  padding: 1.75rem 0 1rem;
+  margin: 0;
+}
+
+.headline {
+  font-family: Brockmann, system-ui, Arial, sans-serif;
+  font-size: 4rem;
+  font-weight: 600;
+  line-height: 1.07;
+  padding: 1.25rem 0 1.5rem;
+  margin: 0;
+}
+
+.paragraph {
+  letter-spacing: -.022em;
+  font-size: 1.0625rem;
+  line-height: 1.47;
+  margin-bottom: .825rem;
+}
+
+.section {
+  padding: 40px max(60px, calc((100vw - 1200px) / 2));
+}
+
+.w-container { max-width: 940px; margin: 0 auto; }
+
+a { color: var(--link-only-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.primary-button {
+  background: var(--link-blue);
+  color: var(--text-on-link);
+  border: 0;
+  border-radius: 20px;
+  padding: .6875rem 1.3125rem;
+  font-size: 1.0625rem;
+  font-weight: 400;
+  line-height: 1.14;
+  cursor: pointer;
+  transition: background-color .3s;
+  width: fit-content;
+  text-decoration: none;
+  display: inline-block;
+}
+.primary-button:hover { background: #6784dc; text-decoration: none; }
+.primary-button:active { background: #43464d; }
+.primary-button.inverse {
+  border: 1px solid var(--link-only-text);
+  background: var(--transparent);
+  color: var(--link-only-text);
+}
+.primary-button.inverse:hover { color: #fff; background: #6784dc; }
+.primary-button:disabled { opacity: .6; cursor: not-allowed; }
+
+.formtextfield {
+  border-radius: 20px;
+  color: #333;
+  background: #fff;
+  border: 1px solid #ccc;
+  width: 100%;
+  height: 38px;
+  margin-bottom: .75rem;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.42857;
+  display: block;
+  font-family: inherit;
+}
+.formtextfield.larger { height: 10rem; resize: vertical; }
+.formtextfield:focus { outline: none; border-color: var(--link-blue); }
+
+.u-flex-row { display: flex; gap: 20px; }
+
+.cards {
+  border-radius: 20px;
+  width: 100%;
+}
+
+.specs-table {
+  border-collapse: collapse;
+  table-layout: auto;
+  width: 100%;
+}
+.specs-table th, .specs-table td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: left;
+  font-size: .95rem;
+  vertical-align: middle;
+}
+.specs-table th { font-weight: 600; }
+
+.code {
+  color: var(--code-green);
+  font-family: ui-monospace, Menlo, Monaco;
+  letter-spacing: .08em;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.danger-link {
+  color: #b23;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+}
+
+.status-ok { color: var(--code-green); }
+.status-err { color: #b23; }
+
+@media screen and (max-width: 767px) {
+  .section { padding: 20px 16px; }
+  h1, .headline { font-size: 2.5rem; }
+  h2 { font-size: 1.75rem; }
+  .u-flex-row { flex-direction: column; }
+}

@@ -1,0 +1,7 @@
+# Explicitly scoped so configuration.json (gitignored) still ships into
+# the Cloud Build context.
+.gcloudignore
+.git
+.gitignore
+radio-playlog-ui-api
+*.log

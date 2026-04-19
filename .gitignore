@@ -5,3 +5,13 @@ logger/configuration.json
 logger/configuration.gcp.json
 logger/api_keys.json
 logger/radio-playlog
+
+ui-*/**/readme.md
+ui-*/.*/
+
+# ui-api — per-env config and compiled binary
+ui-api/configuration.json
+ui-api/radio-playlog-ui-api
+
+# ui-web — per-env runtime config
+ui-web/public/assets/config.js

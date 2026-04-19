@@ -1,0 +1,27 @@
+{
+  "hosting": {
+    "site": "radio-playlog",
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "radio-playlog-ui-api",
+          "region": "europe-north1"
+        }
+      },
+      {
+        "source": "/auth/**",
+        "run": {
+          "serviceId": "radio-playlog-ui-api",
+          "region": "europe-north1"
+        }
+      }
+    ]
+  }
+}

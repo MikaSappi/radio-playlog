@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Radio Playlog — Fremen</title>
+<link rel="stylesheet" href="./assets/app.css" />
+<script>
+  // config.js is emitted at deploy time. It sets window.API_BASE to the
+  // ui-api origin (e.g. https://playlog-api.example.fremen.fi). Kept out
+  // of the static bundle so the same files can be reused across envs.
+</script>
+<script src="./assets/config.js"></script>
+</head>
+<body>
+<main class="section">
+  <div class="w-container">
+    <h1 class="headline">Radio Playlog</h1>
+    <p class="paragraph">A logger for broadcast plays. Sign in to manage API keys and delivery.</p>
+
+    <div id="signed-out" hidden>
+      <div class="u-flex-row" style="gap:12px;flex-wrap:wrap;margin:1.5rem 0;">
+        <a class="primary-button" id="btn-google" href="#">Sign in with Google</a>
+        <a class="primary-button inverse" id="btn-microsoft" href="#">Sign in with Microsoft</a>
+      </div>
+    </div>
+
+    <div id="signed-in" hidden>
+      <p class="paragraph">
+        Signed in as <strong id="whoami-email"></strong>
+        (<span id="whoami-provider"></span>) &middot;
+        <a href="#" id="btn-logout">Sign out</a>
+      </p>
+
+      <section class="cards" style="max-width:none;padding:0;">
+        <h2>Reports</h2>
+        <p class="paragraph">Where the monthly play report should be sent, and how often.</p>
+
+        <form id="form-settings" onsubmit="return false;">
+          <label class="paragraph" for="emails">Destination emails (one per line, up to 10)</label>
+          <textarea id="emails" class="formtextfield larger" placeholder="you@example.com&#10;friend@label.fi"></textarea>
+
+          <label class="paragraph" for="cadence">Cadence</label>
+          <select id="cadence" class="formtextfield">
+            <option value="off">Off — don't send reports</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+
+          <div class="u-flex-row" style="margin-top:1rem;">
+            <button type="submit" id="btn-save-settings" class="primary-button">Save</button>
+            <span id="settings-status" class="paragraph" style="align-self:center;"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="cards" style="max-width:none;padding:0;margin-top:2rem;">
+        <h2>API keys</h2>
+        <p class="paragraph">
+          Each key authenticates one logger source. Keys are shown once at creation.
+          After that only the hash is visible — keep the key string somewhere safe.
+        </p>
+
+        <form id="form-new-key" onsubmit="return false;" class="u-flex-row" style="align-items:center;gap:12px;">
+          <input id="new-key-label" class="formtextfield" style="max-width:320px;" placeholder="Label — e.g. 'main-studio'" />
+          <button type="submit" id="btn-new-key" class="primary-button">Create key</button>
+        </form>
+
+        <div id="new-key-reveal" hidden style="margin-top:1rem;padding:1rem;border:1px solid var(--notice-yellow);border-radius:12px;">
+          <p class="paragraph"><strong>Copy this key now.</strong> It will not be shown again.</p>
+          <code class="code" id="new-key-raw" style="word-break:break-all;"></code>
+        </div>
+
+        <table class="specs-table" style="margin-top:1.5rem;">
+          <thead>
+            <tr><th>Label</th><th>Created</th><th>Hash (first 12)</th><th>State</th><th></th></tr>
+          </thead>
+          <tbody id="keys-body"></tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+</main>
+<script src="./assets/app.js"></script>
+</body>
+</html>
