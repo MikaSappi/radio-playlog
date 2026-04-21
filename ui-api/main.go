@@ -25,7 +25,13 @@ func main() {
 		res:       res,
 		store:     store,
 		providers: buildProviders(res),
+		mailer:    newMailer(res),
 	}
+
+	// Start background workers for silence alerts and scheduled reports.
+	// They run forever; their own tickers handle pacing.
+	go runSilenceAlerter(ctx, app)
+	go runReportWorker(ctx, app)
 
 	mux := http.NewServeMux()
 
@@ -52,11 +58,30 @@ func main() {
 		}
 	}))
 	mux.HandleFunc("/api/keys/", app.requireUser(func(w http.ResponseWriter, r *http.Request, uid string) {
-		if r.Method != http.MethodDelete {
+		switch r.Method {
+		case http.MethodDelete:
+			app.handleKeyDisable(w, r, uid)
+		case http.MethodPatch:
+			app.handleKeyRename(w, r, uid)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	}))
+
+	mux.HandleFunc("/api/logs", app.requireUser(func(w http.ResponseWriter, r *http.Request, uid string) {
+		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		app.handleKeyDisable(w, r, uid)
+		app.handleLogsGet(w, r, uid)
+	}))
+
+	mux.HandleFunc("/api/export", app.requireUser(func(w http.ResponseWriter, r *http.Request, uid string) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		app.handleExport(w, r, uid)
 	}))
 
 	mux.HandleFunc("/api/settings", app.requireUser(func(w http.ResponseWriter, r *http.Request, uid string) {

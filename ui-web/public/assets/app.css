@@ -167,6 +167,87 @@ a:hover { text-decoration: underline; }
 .status-ok { color: var(--code-green); }
 .status-err { color: #b23; }
 
+/* Per-key status LED: a small circle that reflects the server-computed
+   status (green/yellow/red/idle/off). The glow is subtle on green to
+   imply "live". */
+.led {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.2);
+}
+.led-green  { background: #1aa531; box-shadow: 0 0 6px #1aa53180, inset 0 0 0 1px rgba(0,0,0,.2); }
+.led-yellow { background: #d9a21a; }
+.led-red    { background: #c0392b; }
+.led-idle   { background: #9aa0a6; }
+.led-off    { background: #444; }
+
+.led-legend {
+  font-size: .85rem;
+  color: #666;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: .5rem 0 1rem;
+}
+.led-legend .led { margin-right: 4px; }
+
+.renameable {
+  cursor: pointer;
+  border-bottom: 1px dashed #aaa;
+}
+.renameable:hover { color: var(--link-only-text); border-bottom-color: var(--link-only-text); }
+
+.subtle { color: #666; font-size: .9rem; }
+
+.tabs { display: flex; gap: 8px; margin: 1rem 0; flex-wrap: wrap; }
+.tab {
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 18px;
+  padding: .4rem 1rem;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.tab.active { background: var(--link-blue); color: #fff; border-color: var(--link-blue); }
+
+@media (prefers-color-scheme: dark) {
+  .tab { border-color: #555; }
+  .subtle { color: #aaa; }
+  .led-legend { color: #aaa; }
+}
+
+.fieldgroup {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: .5rem 1rem;
+  align-items: center;
+  margin: .5rem 0 1rem;
+}
+.fieldgroup .formtextfield { margin-bottom: 0; max-width: 340px; }
+
+.checkboxrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: .5rem 0;
+}
+.checkboxrow label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: .35rem .7rem;
+  border: 1px solid #ccc;
+  border-radius: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.checkboxrow input { margin: 0; }
+
 @media screen and (max-width: 767px) {
   .section { padding: 20px 16px; }
   h1, .headline { font-size: 2.5rem; }

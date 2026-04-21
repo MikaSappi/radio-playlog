@@ -18,6 +18,8 @@ type Config struct {
 	BQTableUsers    string `json:"bq_table_users"`
 	BQTableAPIKeys  string `json:"bq_table_api_keys"`
 	BQTableSettings string `json:"bq_table_settings"`
+	BQTablePlays    string `json:"bq_table_plays"`
+	BQTableAlerts   string `json:"bq_table_alerts"`
 
 	UIOrigin   string `json:"ui_origin"`
 	APIBaseURL string `json:"api_base_url"`
@@ -31,6 +33,22 @@ type Config struct {
 	MicrosoftClientID        string `json:"microsoft_client_id"`
 	MicrosoftClientSecretEnv string `json:"microsoft_client_secret_env"`
 	MicrosoftTenant          string `json:"microsoft_tenant"`
+
+	// SMTP email delivery for silence alerts and scheduled reports.
+	// Values come from env (SMTPHostEnv etc.) so no secret is committed.
+	// The minimum viable config is just SMTP_USER + SMTP_PASSWORD — the
+	// host defaults to smtp.gmail.com:587 and From defaults to the user
+	// address, which is what Gmail requires. Setting the host/port/from
+	// envs lets you point at any other provider.
+	SMTPHostEnv     string `json:"smtp_host_env"`
+	SMTPPortEnv     string `json:"smtp_port_env"`
+	SMTPUserEnv     string `json:"smtp_user_env"`
+	SMTPPasswordEnv string `json:"smtp_password_env"`
+	SMTPFromEnv     string `json:"smtp_from_env"`
+
+	// SilenceAlertHours is how long a previously-active key must be
+	// silent before an email is sent. Zero falls back to 1.
+	SilenceAlertHours int `json:"silence_alert_hours"`
 }
 
 type Resolved struct {
@@ -40,6 +58,12 @@ type Resolved struct {
 	GoogleSecret    string
 	MicrosoftID     string
 	MicrosoftSecret string
+
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
 }
 
 func resolveConfigPath() string {
@@ -86,7 +110,35 @@ func loadConfig() (*Resolved, error) {
 	}
 	if c.SessionTTLHours <= 0 {
 		c.SessionTTLHours = 168
-		r.Cfg = c
+	}
+	if c.BQTablePlays == "" {
+		c.BQTablePlays = "plays"
+	}
+	if c.BQTableAlerts == "" {
+		c.BQTableAlerts = "key_alerts"
+	}
+	if c.SilenceAlertHours <= 0 {
+		c.SilenceAlertHours = 1
+	}
+	r.Cfg = c
+
+	r.SMTPHost = os.Getenv(c.SMTPHostEnv)
+	r.SMTPPort = os.Getenv(c.SMTPPortEnv)
+	r.SMTPUser = os.Getenv(c.SMTPUserEnv)
+	r.SMTPPassword = os.Getenv(c.SMTPPasswordEnv)
+	r.SMTPFrom = os.Getenv(c.SMTPFromEnv)
+	// Default to Gmail SMTP so supplying just SMTP_USER + SMTP_PASSWORD
+	// (a Gmail app password) is enough to send. From defaults to the
+	// signed-in user address, which is what Gmail expects anyway — any
+	// other From value would be rewritten or rejected.
+	if r.SMTPHost == "" {
+		r.SMTPHost = "smtp.gmail.com"
+	}
+	if r.SMTPPort == "" {
+		r.SMTPPort = "587"
+	}
+	if r.SMTPFrom == "" {
+		r.SMTPFrom = r.SMTPUser
 	}
 	return r, nil
 }

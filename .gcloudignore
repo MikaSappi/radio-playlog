@@ -1,0 +1,17 @@
+.nova
+.git
+.gitignore
+.*/
+.DS_Store
+
+# Per-env configs and secrets — keep out of the build context
+logger/configuration.json
+logger/api_keys.json
+logger/radio-playlog
+
+ui-api/configuration.json
+ui-api/radio-playlog-ui-api
+ui-web/public/assets/config.js
+
+# NOTE: logger/configuration.gcp.json is intentionally NOT ignored —
+# the Dockerfile copies it into the image as configuration.json.

@@ -4,6 +4,8 @@
   "bq_table_users": "users",
   "bq_table_api_keys": "api_keys",
   "bq_table_settings": "user_settings",
+  "bq_table_plays": "plays",
+  "bq_table_alerts": "key_alerts",
 
   "ui_origin": "https://log.fremen.fi",
   "api_base_url": "https://log.fremen.fi",
@@ -16,5 +18,13 @@
 
   "microsoft_client_id": "your-microsoft-app-id",
   "microsoft_client_secret_env": "MICROSOFT_CLIENT_SECRET",
-  "microsoft_tenant": "common"
+  "microsoft_tenant": "common",
+
+  "smtp_host_env": "SMTP_HOST",
+  "smtp_port_env": "SMTP_PORT",
+  "smtp_user_env": "SMTP_USER",
+  "smtp_password_env": "SMTP_PASSWORD",
+  "smtp_from_env": "SMTP_FROM",
+
+  "silence_alert_hours": 1
 }

@@ -40,14 +40,24 @@ type PlaylogEntry struct {
 	UserID    string    `bigquery:"user_id"`
 	Title     string    `bigquery:"title"`
 	Artist    string    `bigquery:"artist"`
+	KeyHash   string    `bigquery:"key_hash"`
+	Label     string    `bigquery:"label"`
 }
 
 // writeFunc is the storage-agnostic write entrypoint.
 type writeFunc func(PlaylogEntry) error
 
-// authFunc resolves an API key to a user id. ok=false means unknown/missing
-// key when a key is required.
-type authFunc func(apiKey string) (userID string, ok bool)
+// keyInfo is what a presented API key resolves to: the owning user and the
+// label snapshot to stamp onto each play. The label is resolved at log time
+// so rename history doesn't rewrite past rows.
+type keyInfo struct {
+	UserID string
+	Label  string
+}
+
+// authFunc resolves an API key to the owning user + current label. ok=false
+// means unknown/missing key when a key is required.
+type authFunc func(apiKey string) (keyInfo, string, bool) // returns (info, keyHashHex, ok)
 
 func (c *Configuration) loadConfig(path string) {
 	confData, err := os.ReadFile(path)
@@ -109,7 +119,7 @@ func runGCP(c *Configuration) {
 	inserter := client.Dataset(c.BQDataset).Table(c.BQTable).Inserter()
 	write := func(e PlaylogEntry) error { return inserter.Put(ctx, e) }
 
-	load := func() (map[string]string, error) {
+	load := func() (map[string]keyInfo, error) {
 		return loadBQKeys(ctx, client, c.GCPProject, c.BQDataset, "api_keys")
 	}
 	initial, err := load()
@@ -152,7 +162,7 @@ func runLocal(c *Configuration) {
 	var auth authFunc
 	multiUser := c.AuthKeysFile != ""
 	if multiUser {
-		load := func() (map[string]string, error) { return loadFileKeys(c.AuthKeysFile) }
+		load := func() (map[string]keyInfo, error) { return loadFileKeys(c.AuthKeysFile) }
 		initial, err := load()
 		if err != nil {
 			log.Fatalf("failed to load %s: %v", c.AuthKeysFile, err)
@@ -167,7 +177,10 @@ func runLocal(c *Configuration) {
 			log.Fatal("local single-user mode requires uid in configuration.json")
 		}
 		configUID := c.UserID
-		auth = func(_ string) (string, bool) { return configUID, true }
+		// Single-user passthrough: no hash, no label.
+		auth = func(_ string) (keyInfo, string, bool) {
+			return keyInfo{UserID: configUID}, "", true
+		}
 		log.Printf("Local single-user mode: dataDir=%s archiveDir=%s uid=%s",
 			dataDir, archiveDir, configUID)
 	}
@@ -225,7 +238,7 @@ func handleHTTPLog(w http.ResponseWriter, r *http.Request, write writeFunc, auth
 		return
 	}
 
-	userID, ok := auth(r.Header.Get("X-API-Key"))
+	info, keyHashHex, ok := auth(r.Header.Get("X-API-Key"))
 	if !ok {
 		log.Printf("Rejected request with missing/invalid X-API-Key")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -246,7 +259,7 @@ func handleHTTPLog(w http.ResponseWriter, r *http.Request, write writeFunc, auth
 		return
 	}
 
-	entry, err := parseEntry(body, userID)
+	entry, err := parseEntry(body, info.UserID, keyHashHex, info.Label)
 	if err != nil {
 		log.Printf("Parse error: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -259,7 +272,7 @@ func handleHTTPLog(w http.ResponseWriter, r *http.Request, write writeFunc, auth
 		return
 	}
 
-	log.Printf("Logged message for user=%s", userID)
+	log.Printf("Logged message for user=%s key=%s label=%q", info.UserID, shortHash(keyHashHex), info.Label)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -269,7 +282,7 @@ func handleConnection(conn net.Conn, write writeFunc, auth authFunc) {
 	log.Printf("TCP connection from: %s", conn.RemoteAddr())
 
 	// TCP has no headers — rely on the single-user passthrough auth.
-	userID, ok := auth("")
+	info, keyHashHex, ok := auth("")
 	if !ok {
 		log.Printf("TCP rejected: auth returned not-ok")
 		return
@@ -284,7 +297,7 @@ func handleConnection(conn net.Conn, write writeFunc, auth authFunc) {
 		if len(line) == 0 {
 			return
 		}
-		entry, err := parseEntry(line, userID)
+		entry, err := parseEntry(line, info.UserID, keyHashHex, info.Label)
 		if err != nil {
 			log.Printf("TCP parse error: %v", err)
 			return
@@ -293,11 +306,11 @@ func handleConnection(conn net.Conn, write writeFunc, auth authFunc) {
 			log.Printf("TCP log error: %v", err)
 			return
 		}
-		log.Printf("Logged TCP message for user=%s", userID)
+		log.Printf("Logged TCP message for user=%s", info.UserID)
 	}
 }
 
-func parseEntry(body []byte, userID string) (PlaylogEntry, error) {
+func parseEntry(body []byte, userID, keyHash, label string) (PlaylogEntry, error) {
 	var data map[string]string
 	if err := json.Unmarshal(body, &data); err != nil {
 		return PlaylogEntry{}, fmt.Errorf("failed to parse JSON: %v", err)
@@ -307,7 +320,16 @@ func parseEntry(body []byte, userID string) (PlaylogEntry, error) {
 		UserID:    userID,
 		Title:     data["title"],
 		Artist:    data["artist"],
+		KeyHash:   keyHash,
+		Label:     label,
 	}, nil
+}
+
+func shortHash(h string) string {
+	if len(h) > 12 {
+		return h[:12]
+	}
+	return h
 }
 
 // ---- key store ----
@@ -316,32 +338,39 @@ type apiKeyEntry struct {
 	KeyHash string `json:"key_hash" bigquery:"key_hash"`
 	UserID  string `json:"user_id"  bigquery:"user_id"`
 	Enabled bool   `json:"enabled"  bigquery:"enabled"`
+	// Label is the human-friendly name the user gave this key (station
+	// name). The logger snapshots it into each play row so renames don't
+	// rewrite history. Nullable to stay compatible with older rows.
+	Label bigquery.NullString `json:"label" bigquery:"label"`
 }
 
 type keyStore struct {
 	mu   sync.RWMutex
-	keys map[string]string // lowercase hex SHA256 -> user_id
+	keys map[string]keyInfo // lowercase hex SHA256 -> keyInfo
 }
 
-func (s *keyStore) set(next map[string]string) {
+func (s *keyStore) set(next map[string]keyInfo) {
 	s.mu.Lock()
 	s.keys = next
 	s.mu.Unlock()
 }
 
-func (s *keyStore) Lookup(apiKey string) (string, bool) {
+// Lookup resolves an API key. Returns the keyInfo for the key, the
+// lowercase-hex SHA256 of the key (so callers can tag their writes), and
+// ok=true if the key is known and enabled.
+func (s *keyStore) Lookup(apiKey string) (keyInfo, string, bool) {
 	if apiKey == "" {
-		return "", false
+		return keyInfo{}, "", false
 	}
 	sum := sha256.Sum256([]byte(apiKey))
 	hexHash := hex.EncodeToString(sum[:])
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	uid, ok := s.keys[hexHash]
-	return uid, ok
+	info, ok := s.keys[hexHash]
+	return info, hexHash, ok
 }
 
-func (s *keyStore) startRefresh(load func() (map[string]string, error), interval time.Duration) {
+func (s *keyStore) startRefresh(load func() (map[string]keyInfo, error), interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for range ticker.C {
@@ -355,33 +384,42 @@ func (s *keyStore) startRefresh(load func() (map[string]string, error), interval
 	}
 }
 
-func loadFileKeys(path string) (map[string]string, error) {
+// fileKeyEntry mirrors apiKeyEntry but uses a plain string for Label so the
+// on-disk JSON stays ergonomic for humans.
+type fileKeyEntry struct {
+	KeyHash string `json:"key_hash"`
+	UserID  string `json:"user_id"`
+	Enabled bool   `json:"enabled"`
+	Label   string `json:"label"`
+}
+
+func loadFileKeys(path string) (map[string]keyInfo, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var entries []apiKeyEntry
+	var entries []fileKeyEntry
 	if err := json.Unmarshal(data, &entries); err != nil {
 		return nil, fmt.Errorf("parse %s: %v", path, err)
 	}
-	out := make(map[string]string, len(entries))
+	out := make(map[string]keyInfo, len(entries))
 	for _, e := range entries {
 		if !e.Enabled || e.UserID == "" || e.KeyHash == "" {
 			continue
 		}
-		out[strings.ToLower(e.KeyHash)] = e.UserID
+		out[strings.ToLower(e.KeyHash)] = keyInfo{UserID: e.UserID, Label: e.Label}
 	}
 	return out, nil
 }
 
-func loadBQKeys(ctx context.Context, client *bigquery.Client, project, dataset, table string) (map[string]string, error) {
-	query := fmt.Sprintf("SELECT key_hash, user_id, enabled FROM `%s.%s.%s` WHERE enabled = TRUE",
+func loadBQKeys(ctx context.Context, client *bigquery.Client, project, dataset, table string) (map[string]keyInfo, error) {
+	query := fmt.Sprintf("SELECT key_hash, user_id, enabled, label FROM `%s.%s.%s` WHERE enabled = TRUE",
 		project, dataset, table)
 	it, err := client.Query(query).Read(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := make(map[string]string)
+	out := make(map[string]keyInfo)
 	for {
 		var row apiKeyEntry
 		err := it.Next(&row)
@@ -394,7 +432,11 @@ func loadBQKeys(ctx context.Context, client *bigquery.Client, project, dataset, 
 		if row.UserID == "" || row.KeyHash == "" {
 			continue
 		}
-		out[strings.ToLower(row.KeyHash)] = row.UserID
+		label := ""
+		if row.Label.Valid {
+			label = row.Label.StringVal
+		}
+		out[strings.ToLower(row.KeyHash)] = keyInfo{UserID: row.UserID, Label: label}
 	}
 	return out, nil
 }
@@ -416,7 +458,7 @@ func writeLocalCSV(entry PlaylogEntry, dataDir string) error {
 	defer f.Close()
 
 	if !fileExists {
-		if _, err := f.WriteString("timestamp,user_id,title,artist\n"); err != nil {
+		if _, err := f.WriteString("timestamp,user_id,title,artist,key_hash,label\n"); err != nil {
 			return err
 		}
 	}
@@ -424,8 +466,11 @@ func writeLocalCSV(entry PlaylogEntry, dataDir string) error {
 	userID := escapeCSV(entry.UserID)
 	title := escapeCSV(entry.Title)
 	artist := escapeCSV(entry.Artist)
+	keyHash := escapeCSV(entry.KeyHash)
+	label := escapeCSV(entry.Label)
 
-	logEntry := fmt.Sprintf("%s,%s,%s,%s\n", entry.Timestamp.Format(time.RFC3339), userID, title, artist)
+	logEntry := fmt.Sprintf("%s,%s,%s,%s,%s,%s\n",
+		entry.Timestamp.Format(time.RFC3339), userID, title, artist, keyHash, label)
 	_, err = f.WriteString(logEntry)
 	return err
 }

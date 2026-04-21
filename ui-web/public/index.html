@@ -32,35 +32,28 @@
         <a href="#" id="btn-logout">Sign out</a>
       </p>
 
-      <section class="cards" style="max-width:none;padding:0;">
-        <h2>Reports</h2>
-        <p class="paragraph">Where the monthly play report should be sent, and how often.</p>
+      <nav class="tabs">
+        <button type="button" class="tab active" data-tab="keys">API keys</button>
+        <button type="button" class="tab" data-tab="logs">Logs</button>
+        <button type="button" class="tab" data-tab="export">Export</button>
+        <button type="button" class="tab" data-tab="settings">Settings</button>
+      </nav>
 
-        <form id="form-settings" onsubmit="return false;">
-          <label class="paragraph" for="emails">Destination emails (one per line, up to 10)</label>
-          <textarea id="emails" class="formtextfield larger" placeholder="you@example.com&#10;friend@label.fi"></textarea>
-
-          <label class="paragraph" for="cadence">Cadence</label>
-          <select id="cadence" class="formtextfield">
-            <option value="off">Off — don't send reports</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-
-          <div class="u-flex-row" style="margin-top:1rem;">
-            <button type="submit" id="btn-save-settings" class="primary-button">Save</button>
-            <span id="settings-status" class="paragraph" style="align-self:center;"></span>
-          </div>
-        </form>
-      </section>
-
-      <section class="cards" style="max-width:none;padding:0;margin-top:2rem;">
+      <section id="panel-keys" class="cards" style="max-width:none;padding:0;">
         <h2>API keys</h2>
         <p class="paragraph">
           Each key authenticates one logger source. Keys are shown once at creation.
           After that only the hash is visible — keep the key string somewhere safe.
+          Click a label to rename it (applies to future plays; history keeps the old name).
         </p>
+
+        <div class="led-legend">
+          <span><span class="led led-green"></span> receiving (5 min)</span>
+          <span><span class="led led-yellow"></span> recent (1 h)</span>
+          <span><span class="led led-red"></span> silent (&gt;1 h)</span>
+          <span><span class="led led-idle"></span> no data yet</span>
+          <span><span class="led led-off"></span> disabled</span>
+        </div>
 
         <form id="form-new-key" onsubmit="return false;" class="u-flex-row" style="align-items:center;gap:12px;">
           <input id="new-key-label" class="formtextfield" style="max-width:320px;" placeholder="Label — e.g. 'main-studio'" />
@@ -74,10 +67,130 @@
 
         <table class="specs-table" style="margin-top:1.5rem;">
           <thead>
-            <tr><th>Label</th><th>Created</th><th>Hash (first 12)</th><th>State</th><th></th></tr>
+            <tr>
+              <th>Status</th>
+              <th>Label</th>
+              <th>Created</th>
+              <th>Last seen</th>
+              <th>Hash</th>
+              <th></th>
+            </tr>
           </thead>
           <tbody id="keys-body"></tbody>
         </table>
+      </section>
+
+      <section id="panel-logs" class="cards" hidden style="max-width:none;padding:0;">
+        <h2>Logs</h2>
+        <p class="paragraph">A live look at recent plays. Use this to confirm your loggers are sending data.</p>
+
+        <div class="fieldgroup">
+          <label for="logs-key">Key</label>
+          <select id="logs-key" class="formtextfield">
+            <option value="">All keys</option>
+          </select>
+
+          <label for="logs-from">From</label>
+          <input id="logs-from" type="date" class="formtextfield" />
+
+          <label for="logs-to">To</label>
+          <input id="logs-to" type="date" class="formtextfield" />
+
+          <label for="logs-limit">Limit</label>
+          <input id="logs-limit" type="number" min="1" max="1000" value="100" class="formtextfield" />
+        </div>
+        <div class="u-flex-row" style="align-items:center;">
+          <button id="btn-logs-reload" type="button" class="primary-button">Refresh</button>
+          <span id="logs-status" class="paragraph subtle" style="align-self:center;"></span>
+        </div>
+
+        <table class="specs-table" style="margin-top:1rem;">
+          <thead>
+            <tr><th>Timestamp (your tz)</th><th>Studio</th><th>Artist</th><th>Title</th></tr>
+          </thead>
+          <tbody id="logs-body"></tbody>
+        </table>
+      </section>
+
+      <section id="panel-export" class="cards" hidden style="max-width:none;padding:0;">
+        <h2>Export</h2>
+        <p class="paragraph">Build an export with any columns, any format. Downloads instantly.</p>
+
+        <label class="paragraph">Columns</label>
+        <div class="checkboxrow" id="export-cols">
+          <label><input type="checkbox" value="timestamp" checked /> timestamp</label>
+          <label><input type="checkbox" value="artist" checked /> artist</label>
+          <label><input type="checkbox" value="title" checked /> title</label>
+          <label><input type="checkbox" value="studio_name" checked /> studio_name</label>
+        </div>
+
+        <div class="fieldgroup">
+          <label for="export-format">Format</label>
+          <select id="export-format" class="formtextfield">
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="ndjson">NDJSON</option>
+            <option value="xml">XML</option>
+            <option value="yaml">YAML</option>
+            <option value="toml">TOML</option>
+          </select>
+
+          <label for="export-preset">Period</label>
+          <select id="export-preset" class="formtextfield">
+            <option value="previous_calendar_month">Previous calendar month</option>
+            <option value="current_calendar_month">Current calendar month</option>
+            <option value="custom">Custom date range</option>
+          </select>
+
+          <label for="export-from">From</label>
+          <input id="export-from" type="date" class="formtextfield" disabled />
+
+          <label for="export-to">To</label>
+          <input id="export-to" type="date" class="formtextfield" disabled />
+
+          <label for="export-key">Key filter</label>
+          <select id="export-key" class="formtextfield">
+            <option value="">All keys</option>
+          </select>
+        </div>
+
+        <div class="u-flex-row" style="align-items:center;">
+          <button id="btn-export" type="button" class="primary-button">Download export</button>
+          <span id="export-status" class="paragraph subtle" style="align-self:center;"></span>
+        </div>
+      </section>
+
+      <section id="panel-settings" class="cards" hidden style="max-width:none;padding:0;">
+        <h2>Reports &amp; alerts</h2>
+        <p class="paragraph">Where play reports should be sent, how often, and which timezone reports use.</p>
+
+        <form id="form-settings" onsubmit="return false;">
+          <label class="paragraph" for="emails">Destination emails (one per line, up to 10)</label>
+          <textarea id="emails" class="formtextfield larger" placeholder="you@example.com&#10;friend@label.fi"></textarea>
+
+          <div class="fieldgroup">
+            <label for="cadence">Cadence</label>
+            <select id="cadence" class="formtextfield">
+              <option value="off">Off — don't send reports</option>
+              <option value="daily">Daily (last 24 h)</option>
+              <option value="weekly">Weekly (last 7 days, fires Monday)</option>
+              <option value="monthly">Monthly (last 30 days, fires on the 1st)</option>
+              <option value="calendar_month">Calendar month (1st → last, fires on the 1st)</option>
+            </select>
+
+            <label for="timezone">Timezone</label>
+            <input id="timezone" class="formtextfield" placeholder="e.g. Europe/Helsinki (blank = UTC)" />
+          </div>
+
+          <p class="paragraph subtle">
+            A silence alert is emailed if any active key stops receiving data for more than an hour.
+          </p>
+
+          <div class="u-flex-row" style="margin-top:1rem;">
+            <button type="submit" id="btn-save-settings" class="primary-button">Save</button>
+            <span id="settings-status" class="paragraph" style="align-self:center;"></span>
+          </div>
+        </form>
       </section>
     </div>
   </div>
